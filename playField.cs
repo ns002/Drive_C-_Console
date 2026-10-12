@@ -14,17 +14,17 @@ public class PlayField()
     const char grassChar = '░';
     const char coinChar = '*';
 
-    short GetRandomDirection() => (short)randomNumberGenerator.Next(-1, 2); //get's the random direction the road will move to
+    private short GetRandomDirection() => (short)randomNumberGenerator.Next(-1, 2); //get's the random direction the road will move to
     
     bool roadSideColorDecider = true;
-    string GetRoadsideColored()
+    private string GetRoadsideColored()
     {
-        return roadSideColorDecider ?
-        $"{COLOR_WHITE + roadsideChar}" :
-        $"{COLOR_RED + roadsideChar}";
+        return roadSideColorDecider
+               ? $"{COLOR_WHITE}{roadsideChar}"
+               : $"{COLOR_RED}{roadsideChar}";
     }
 
-    public const ushort roadWidth = 12;
+    const ushort roadWidth = 12;
     const ushort minRoadSP = 1;
     const ushort maxRoadSP = Game.windowWidth - roadWidth - 3;
     short roadStartingPoint = (short)randomNumberGenerator.Next(minRoadSP, maxRoadSP);
@@ -34,9 +34,9 @@ public class PlayField()
     
     public void Update()
     {
-        /* remembering the discarded line to move it back to the top
-         * keep in mind that you need to clear the old string before adding the new one to it
-         */ StringBuilder lastLine = lines[Game.windowHeight - 1].Clear();
+    /* remembering the discarded line to move it back to the top to reduce GC collection
+     * keep in mind that you need to clear the old string before adding the new one to it though
+     */ StringBuilder lastLine = lines[Game.windowHeight - 1].Clear();
         
         //shifting the lines
         for (int i = Game.windowHeight - 1; i > 0; --i)
@@ -48,49 +48,39 @@ public class PlayField()
         lines[0] = lastLine;
         CreateLine(lines[0]);   //the newly generated line will always be at the top of the stack
     }
-
+    ushort? roadCenterFinder = 0;
     const short halfRoadWidth = roadWidth / 2;
-    static ushort visibleSpotCounter;
-    static bool findingSuitableSpawnpoint = true;
-    static ushort roadCenter = 0;
+    ushort visibleSpotCounter;
     public void LateUpdate(ref ushort playerPosition)
     {
-        //place coins in line[0]
-
-        //emplace player in line[29]
+        //TODO: place coins in line[0]
         visibleSpotCounter = 0;
         for (int i = 0; i < lines[29].Length; ++i)
         {
             switch(lines[29][i])   //inspecting each character in line 29
             {
-                default: continue; //if criteria not hit it skips the character; goes to the next i
-
-                case roadChar or roadsideChar or grassChar or coinChar:
-                    goto CriteriaMatches;
-
-                CriteriaMatches:   //label: when the string contains a visibile char
-                    ++visibleSpotCounter;
-                    if (findingSuitableSpawnpoint)
-                    {
-                        if (lines[29][i] == roadChar || lines[29][i] == coinChar)
-                        {
-                            if (++roadCenter == halfRoadWidth)
-                            {
-                                findingSuitableSpawnpoint = false;
-                                playerPosition = visibleSpotCounter;
-                            }
-                        }
-                    }
-                    if (visibleSpotCounter == playerPosition)
-                    {
-                        lines[29][i] = playerChar;
-                        lines[29].Insert(i, $"{COLOR_MAGENTA}");
-                    }
-                    break;
+            default: continue; //if criteria not hit it skips the character; it goes immediately to the next 'i'
+            case roadChar or coinChar:
+                if (roadCenterFinder != null && ++roadCenterFinder == halfRoadWidth)
+                {
+                    roadCenterFinder = null;
+                    playerPosition = (ushort)(visibleSpotCounter + 1);
+                }
+                goto criteriaMatches;
+            case roadsideChar or grassChar: criteriaMatches:
+            /* Emplace the player character, make sure that during the first frame
+             * when the player doesn't exist yet... playerPosition must be an unrealistic large number
+             */ if (++visibleSpotCounter == playerPosition)   
+                {
+                    lines[29][i] = playerChar;
+                    //this will insert the color sequence, the player character is now after the color seq.
+                    lines[29].Insert(i, COLOR_MAGENTA);
+                    ++GlobalEvent.distance;
+                    return;
+                }
+                break;
             }
         }
-
-        ++GlobalEvent.distance;
     }
 
     public void Render()
@@ -117,14 +107,16 @@ public class PlayField()
         if ((direction < 0 && roadStartingPoint > minRoadSP) || //move road left?
             (direction > 0 && roadStartingPoint < maxRoadSP))   //move road right?
             roadStartingPoint += direction;
-        
+
+        short grassRightLength = (short)(Game.windowWidth - roadStartingPoint - roadWidth - 2);
         roadSideColorDecider = !roadSideColorDecider; //switch behaviour Red & White roadside every time
 
-        lineReference.Append($"{COLOR_GREEN}").Append(grassChar, roadStartingPoint);                         //grass left
-        lineReference.Append(GetRoadsideColored());                                                          //roadside left
-        lineReference.Append(roadChar, roadWidth);                                                           //road
-        lineReference.Append(GetRoadsideColored());                                                          //roadside right
-        lineReference.Append($"{COLOR_GREEN}").Append(grassChar, Game.windowWidth - roadStartingPoint - roadWidth - 2); //grass right
-        lineReference.Append($"{COLOR_RESET + lineNumber++}"); //makes debug info at the end normal text color and add a lineNumber to identify it
+        lineReference.Append(COLOR_GREEN).Append(grassChar, roadStartingPoint); //grass left
+        lineReference.Append(GetRoadsideColored());                             //roadside left
+        lineReference.Append(roadChar, roadWidth);                              //road
+        lineReference.Append(GetRoadsideColored());                             //roadside right
+        lineReference.Append(COLOR_GREEN).Append(grassChar, grassRightLength);  //grass right
+        lineReference.Append(COLOR_RESET);                                      //safety
+        ++lineNumber; //just keeping track for debugging purposes
     }
 }
