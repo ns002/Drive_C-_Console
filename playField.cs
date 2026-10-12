@@ -15,7 +15,7 @@ public class PlayField()
     const char coinChar = '*';
 
     private short GetRandomDirection() => (short)randomNumberGenerator.Next(-1, 2); //get's the random direction the road will move to
-    
+
     bool roadSideColorDecider = true;
     private string GetRoadsideColored()
     {
@@ -51,7 +51,7 @@ public class PlayField()
     ushort? roadCenterFinder = 0;
     const short halfRoadWidth = roadWidth / 2;
     ushort visibleSpotCounter;
-    public void LateUpdate(ref ushort playerPosition)
+    public bool LateUpdate(ref ushort playerPosition)
     {
         //TODO: place coins in line[0]
         visibleSpotCounter = 0;
@@ -72,15 +72,31 @@ public class PlayField()
              * when the player doesn't exist yet... playerPosition must be an unrealistic large number
              */ if (++visibleSpotCounter == playerPosition)   
                 {
+                    if (lines[29][i] == grassChar)
+                    {
+                        int length = lines[29].Length;
+                        lines[29].Clear();
+                        lines[29].Length = length;
+                        for(int it = 0; it < length; it++)
+                        {
+                            lines[29][it] = ' ';
+                            if (it == length / 2 - 1) lines[29][it] = 'd';
+                            if (it == length / 2) lines[29][it] = 'e';
+                            if (it == length / 2 + 1) lines[29][it] = 'a';
+                            if (it == length / 2 + 2) lines[29][it] = 'd';
+                        }
+                        return true;
+                    }
+                            
                     lines[29][i] = playerChar;
                     //this will insert the color sequence, the player character is now after the color seq.
                     lines[29].Insert(i, COLOR_MAGENTA);
-                    ++GlobalEvent.distance;
-                    return;
                 }
                 break;
             }
         }
+        ++GlobalEvent.distance;
+        return false;
     }
 
     public void Render()

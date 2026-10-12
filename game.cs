@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel.Design;
+using System.Text;
 public static class GlobalEvent
 {
     public static ulong distance = 0;
@@ -38,21 +39,24 @@ public class Game
             
             player.Update();
 
-            field.LateUpdate(ref player.position);
+            bool dead = field.LateUpdate(ref player.position);
 
             field.Render();
-
+            if (dead) { if (TooBad()) { Main(); } else running = false; };
             Thread.Sleep(150 - player.velocity * 10);
-            
-
-            //tested the car
-            /*StringBuilder road = new();
-            road.Append(roadChar, carPosition - 1);
-            road.Append(carChar);
-            road.Append("  speed: ");
-            road.Append((carVelocity * 10) + 30);
-            Console.WriteLine(road.ToString());*/
 
         } while (running);
+    }
+
+    public bool TooBad()
+    {
+        Console.WriteLine("Play Again? press: x");
+
+        ConsoleKeyInfo answer = Console.ReadKey();
+        if (answer.Key == ConsoleKey.X)
+            return true;
+        else
+            return TooBad();
+
     }
 }
