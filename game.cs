@@ -2,9 +2,14 @@
 using System.Text;
 public static class GlobalEvent
 {
-    public static ulong distance = 0;
-    public static bool playerDies = false;
-
+    public static void Reset()
+    {
+        distance = coinsCollected = 0;
+        playerDies = false;
+    }
+    public static ulong distance;
+    public static ulong coinsCollected;
+    public static bool playerDies;
 }
 
 public class Game
@@ -18,7 +23,9 @@ public class Game
 
     public static void Main()
     {
-        Game game = new Game();
+        Console.Clear();
+        GlobalEvent.Reset();
+        Game game = new();
         game.field.Create();
         game.Run();
     }
@@ -39,10 +46,20 @@ public class Game
             
             player.Update();
 
-            bool dead = field.LateUpdate(ref player.position);
+            field.LateUpdate(ref player.position);
 
             field.Render();
-            if (dead) { if (TooBad()) { Main(); } else running = false; };
+
+            Console.WriteLine($"Speed: {(player.velocity + 3) * 10}km/h");
+            Console.WriteLine($"Distance: {GlobalEvent.distance}m");
+            Console.WriteLine($"Coins: {GlobalEvent.coinsCollected}");
+            Console.WriteLine("Press escape to quit...");
+            if (GlobalEvent.playerDies) 
+            {
+                if (TooBad()) Main();
+                else running = false;
+            };
+
             Thread.Sleep(150 - player.velocity * 10);
 
         } while (running);

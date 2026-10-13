@@ -51,7 +51,7 @@ public class PlayField()
     ushort? roadCenterFinder = 0;
     const short halfRoadWidth = roadWidth / 2;
     ushort visibleSpotCounter;
-    public bool LateUpdate(ref ushort playerPosition)
+    public void LateUpdate(ref ushort playerPosition)
     {
         //TODO: place coins in line[0]
         visibleSpotCounter = 0;
@@ -74,18 +74,8 @@ public class PlayField()
                 {
                     if (lines[29][i] == grassChar)
                     {
-                        int length = lines[29].Length;
-                        lines[29].Clear();
-                        lines[29].Length = length;
-                        for(int it = 0; it < length; it++)
-                        {
-                            lines[29][it] = ' ';
-                            if (it == length / 2 - 1) lines[29][it] = 'd';
-                            if (it == length / 2) lines[29][it] = 'e';
-                            if (it == length / 2 + 1) lines[29][it] = 'a';
-                            if (it == length / 2 + 2) lines[29][it] = 'd';
-                        }
-                        return true;
+                        GlobalEvent.playerDies = true;
+                        return;
                     }
                             
                     lines[29][i] = playerChar;
@@ -96,7 +86,6 @@ public class PlayField()
             }
         }
         ++GlobalEvent.distance;
-        return false;
     }
 
     public void Render()
