@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.Design;
-using System.Text;
+﻿using System.Text;
 public static class GlobalEvent
 {
     public static void Reset()
@@ -57,23 +56,24 @@ public class Game
             if (GlobalEvent.playerDies) 
             {
                 if (TooBad()) Main();
-                else running = false;
-            };
+                else Interlocked.Exchange(ref running, false);
+            }
 
             Thread.Sleep(150 - player.velocity * 10);
 
         } while (running);
     }
 
-    public bool TooBad()
+    public static bool TooBad()
     {
         Console.WriteLine("Play Again? press: x");
 
         ConsoleKeyInfo answer = Console.ReadKey();
         if (answer.Key == ConsoleKey.X)
-            return true;
-        else
-            return TooBad();
+             return true;
+        else if (running == false)
+             return false;
+        else return TooBad();
 
     }
 }

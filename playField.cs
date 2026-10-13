@@ -14,7 +14,7 @@ public class PlayField()
     const char grassChar = '░';
     const char coinChar = '*';
 
-    private short GetRandomDirection() => (short)randomNumberGenerator.Next(-1, 2); //get's the random direction the road will move to
+    private static short GetRandomDirection() => (short)randomNumberGenerator.Next(-1, 2); //get's the random direction the road will move to
 
     bool roadSideColorDecider = true;
     private string GetRoadsideColored()
@@ -29,7 +29,7 @@ public class PlayField()
     const ushort maxRoadSP = Game.windowWidth - roadWidth - 3;
     short roadStartingPoint = (short)randomNumberGenerator.Next(minRoadSP, maxRoadSP);
 
-    static Random randomNumberGenerator = new Random();
+    readonly static Random randomNumberGenerator = new();
     StringBuilder[] lines = [];
     
     public void Update()
