@@ -1,5 +1,5 @@
 ﻿using System.Text;
-public class PlayField()
+public class PlayField
 {
     readonly static string COLOR_RESET = "\e[0m";
     readonly static string COLOR_RED = "\e[31m";
@@ -14,7 +14,7 @@ public class PlayField()
     const char grassChar = '░';
     const char coinChar = '*';
 
-    private static short GetRandomDirection() => (short)randomNumberGenerator.Next(-1, 2); //get's the random direction the road will move to
+    private static short GetRandomDirection() => (short)Random.Shared.Next(-1, 2); //get's the random direction the road will move to
 
     bool roadSideColorDecider = true;
     private string GetRoadsideColored()
@@ -27,9 +27,7 @@ public class PlayField()
     const ushort roadWidth = 12;
     const ushort minRoadSP = 1;
     const ushort maxRoadSP = Game.windowWidth - roadWidth - 3;
-    short roadStartingPoint = (short)randomNumberGenerator.Next(minRoadSP, maxRoadSP);
-
-    readonly static Random randomNumberGenerator = new();
+    short roadStartingPoint = (short)Random.Shared.Next(minRoadSP, maxRoadSP);
     StringBuilder[] lines = [];
     
     public void Update()
@@ -48,44 +46,55 @@ public class PlayField()
         lines[0] = lastLine;
         CreateLine(lines[0]);   //the newly generated line will always be at the top of the stack
     }
-    ushort? roadCenterFinder = 0;
+
+    ushort roadCenterFinder = 0;
     const short halfRoadWidth = roadWidth / 2;
-    ushort visibleSpotCounter;
-    public void LateUpdate(ref ushort playerPosition)
+    public void LateUpdate(
+        ref ushort playerPosition,
+        ref ulong coinsCollected,
+        ref ulong distanceTravelled)
     {
-        //TODO: place coins in line[0]
-        visibleSpotCounter = 0;
-        for (int i = 0; i < lines[29].Length; ++i)
+        // Spawn coins with a 1% chance on every road space
+        int length = lines[0].Length;
+        for (int i = 0; i < length; ++i)
         {
-            switch(lines[29][i])   //inspecting each character in line 29
+            if (lines[0][i] == roadChar && Random.Shared.Chance(1))
             {
-            default: continue; //if criteria not hit it skips the character; it goes immediately to the next 'i'
-            case roadChar or coinChar:
-                if (roadCenterFinder != null && ++roadCenterFinder == halfRoadWidth)
-                {
-                    roadCenterFinder = null;
-                    playerPosition = (ushort)(visibleSpotCounter + 1);
-                }
-                goto criteriaMatches;
-            case roadsideChar or grassChar: criteriaMatches:
-            /* Emplace the player character, make sure that during the first frame
-             * when the player doesn't exist yet... playerPosition must be an unrealistic large number
-             */ if (++visibleSpotCounter == playerPosition)   
-                {
-                    if (lines[29][i] == grassChar)
-                    {
-                        GlobalEvent.playerDies = true;
-                        return;
-                    }
-                            
-                    lines[29][i] = playerChar;
-                    //this will insert the color sequence, the player character is now after the color seq.
-                    lines[29].Insert(i, COLOR_MAGENTA);
-                }
-                break;
+                lines[0][i] = coinChar;
+                length = lines[0].Insert(i, COLOR_YELLOW).Length;
+                i += COLOR_YELLOW.Length;
             }
         }
-        ++GlobalEvent.distance;
+
+        // Checking the state of the final line below
+        ushort visibleSpotCounter = 0;
+        length = lines[29].Length;
+        for (int i = 0; i < length; ++i)
+        {
+            char currentChar = lines[29][i];
+            switch (currentChar)
+            {
+                case roadsideChar or grassChar: break;
+                case roadChar or coinChar: // Find the road center if the finder is active
+                    if (playerPosition == Game.windowWidth && ++roadCenterFinder == halfRoadWidth)
+                        playerPosition = (ushort)(visibleSpotCounter + 1);
+                    break;
+                default: continue;  //skip noise characters, like color codes entirely
+            }
+
+            // Placing the player & checking collision
+            if (++visibleSpotCounter == playerPosition)
+            {
+                lines[29][i] = playerChar;
+                if (currentChar == coinChar) ++coinsCollected;
+                else if (currentChar == grassChar) {
+                    Player.Kill(); return;
+                }
+                lines[29].Insert(i, COLOR_MAGENTA);
+                ++distanceTravelled;
+                return;
+            }
+        }
     }
 
     public void Render()

@@ -1,79 +1,61 @@
-﻿using System.Text;
-public static class GlobalEvent
+﻿public class GameState
 {
-    public static void Reset()
+    public GameState()
     {
-        distance = coinsCollected = 0;
-        playerDies = false;
+        distance = coins = 0;
     }
-    public static ulong distance;
-    public static ulong coinsCollected;
-    public static bool playerDies;
+    public ulong distance;
+    public ulong coins;
+
+    //Do not reset these in the constructor
+    volatile public static bool running = false;
 }
 
-public class Game
+public sealed class Game
 {
-    readonly Player player = new();
-    readonly PlayField field = new();
+    static Player? player = null;
+    static PlayField? field = null;
+    static GameState? state = null;
 
     public const ushort windowHeight = 30;
     public const ushort windowWidth = 50;
-    volatile public static bool running = true;
 
-    public static void Main()
+    static bool WaitingForInput() => !WindowsConsole.Input.WantToRestart() && GameState.running;
+
+    public static void Run()
     {
+        if (!GameState.running) return; //no need to initialize new memory if user wants to quit
+
         Console.Clear();
-        GlobalEvent.Reset();
-        Game game = new();
-        game.field.Create();
-        game.Run();
-    }
-    
-    public void Run()
-    {
-        Console.CursorVisible = false;
-        Console.OutputEncoding = Encoding.UTF8;
-        Input.StartInputListener(); //start the background input listener
+        state = new();
+        player = new();
+        field = new();
+        field.Create();
 
-        do {/* The order of operations is very important
-             * First The playfield is updated so the lines in memory look as they will be rendered
-             * Then other gameobjects will update
-             * Then the field has to do a late update... in order to account for these objects in the scene
-             */
-
+        while (GameState.running) 
+        {
             field.Update();
             
             player.Update();
 
-            field.LateUpdate(ref player.position);
+            field.LateUpdate(ref player.position, ref state.coins, ref state.distance);
 
             field.Render();
-
+            // TODO: make a renderer class that handles field.Render() plus a new GUI class
+            // You just need to ensure that the unused trailing space of every row is explicitly padded with spaces out to the edge of the screen.
+            // And also important, try to force the console to open with a forced size so the game doesn't break when there isn't enough space
             Console.WriteLine($"Speed: {(player.velocity + 3) * 10}km/h");
-            Console.WriteLine($"Distance: {GlobalEvent.distance}m");
-            Console.WriteLine($"Coins: {GlobalEvent.coinsCollected}");
-            Console.WriteLine("Press escape to quit...");
-            if (GlobalEvent.playerDies) 
+            Console.WriteLine($"Distance: {state.distance}m");
+            Console.WriteLine($"Coins: {state.coins}");
+            Console.WriteLine("\nPress escape to quit...");
+            if (Player.HasDied()) 
             {
-                if (TooBad()) Main();
-                else Interlocked.Exchange(ref running, false);
+                Console.WriteLine("You died. Press 'R' to play again.");
+                while (WaitingForInput()) Thread.Sleep(1);
+                Run(); //The loop will break whenever the input listener disconnects.
+                return;
             }
-
             Thread.Sleep(150 - player.velocity * 10);
-
-        } while (running);
-    }
-
-    public static bool TooBad()
-    {
-        Console.WriteLine("Play Again? press: x");
-
-        ConsoleKeyInfo answer = Console.ReadKey();
-        if (answer.Key == ConsoleKey.X)
-             return true;
-        else if (running == false)
-             return false;
-        else return TooBad();
-
+        }
     }
 }
