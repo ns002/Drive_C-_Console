@@ -1,11 +1,9 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 public static class RandomExtensions
 {
-    public static bool Chance(this Random rand, int percentage)
-    {
-        return rand.Next(100) < percentage;
-    }
+    public static bool Chance(this Random rand, int percentage) => rand.Next(100) < percentage;
 }
 
 public sealed partial class WindowsConsole
@@ -29,15 +27,43 @@ public sealed partial class WindowsConsole
     const int STD_INPUT_HANDLE = -10;
     const uint ENABLE_ECHO_INPUT = 0x0004;
     const uint ENABLE_LINE_INPUT = 0x0002;
-    const uint ENABLE_QUICK_EDIT = 0x0040;
+    const uint ENABLE_QUICK_EDIT = 0x0040;  //I suppose this is disabled by-default, fuck you google!
 
     public static void Main()
     {
+        Console.WriteLine("Drive startup (debug):");
         IntPtr hInput = GetStdHandle(STD_INPUT_HANDLE);
-        bool success = GetConsoleMode(hInput, out uint mode); // Read the current settings of the console
-        if (!success) return;
-        mode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_QUICK_EDIT);
-        SetConsoleMode(hInput, mode);
+
+        if (!GetConsoleMode(hInput, out uint originalMode))
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+            string errorMsg = new Win32Exception(errorCode).Message;
+            Console.WriteLine($"GetConsoleMode failed [{errorCode}]: {errorMsg}");
+            return;
+        }
+
+        DumpConsoleMode("Before", originalMode);
+
+        uint newMode = originalMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_QUICK_EDIT);
+        if (!SetConsoleMode(hInput, newMode))
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+            string errorMessage = new Win32Exception(errorCode).Message;
+            Console.WriteLine($"SetConsoleMode failed [{errorCode}]: {errorMessage}");
+
+            // continue — may still be usable depending on environment
+        }
+
+        if (!GetConsoleMode(hInput, out uint afterMode))
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+            string errorMsg = new Win32Exception(errorCode).Message;
+            Console.WriteLine($"GetConsoleMode(after) failed [{errorCode}]: {errorMsg}");
+            return;
+        }
+
+        DumpConsoleMode("After", afterMode);
+
         Console.CursorVisible = false;
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         Input.StartInputListener();
@@ -67,7 +93,8 @@ public sealed partial class WindowsConsole
             else return Axis.Neutral;
         }
 
-        public static void StartInputListener() // An instance method that can freely read/write to the class instance fields
+        public static void StartInputListener() // An instance method that can freely read/write to other class instance fields
+                                                // Remember to keep things atomic where necessary
         {
             if (Interlocked.CompareExchange(ref GameState.running, true, false)) return; _ = Task.Run(() =>
             {
@@ -91,5 +118,23 @@ public sealed partial class WindowsConsole
                 }
             });
         }
+    }
+
+    private static void DumpConsoleMode(string label, uint mode)
+    {
+        Console.WriteLine($"{label} console mode: 0x{mode:X4}");
+        Console.WriteLine($"  ENABLE_ECHO_INPUT : {(mode & ENABLE_ECHO_INPUT) != 0}");
+        Console.WriteLine($"  ENABLE_LINE_INPUT : {(mode & ENABLE_LINE_INPUT) != 0}");
+        Console.WriteLine($"  ENABLE_QUICK_EDIT : {(mode & ENABLE_QUICK_EDIT) != 0}");
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void LogWin32Error(string contextMessage)
+    {
+        // Capture the error instantly before anything else overwrites the OS register
+        int errorCode = Marshal.GetLastWin32Error();
+        string errorMsg = new Win32Exception(errorCode).Message;
+
+        Console.WriteLine($"{contextMessage} [{errorCode}]: {errorMsg}");
     }
 }
