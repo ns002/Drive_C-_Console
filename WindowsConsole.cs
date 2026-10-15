@@ -66,6 +66,38 @@ public sealed partial class WindowsConsole
 
         DumpConsoleMode("After", afterMode);
 
+        // Try to set console window and buffer to the requested Game dimensions.
+        try
+        {
+            int targetWidth = (int)Game.windowWidth;
+            int targetHeight = (int)Game.windowHeight;
+
+            // Clamp to the system's largest possible window
+            int maxW = Console.LargestWindowWidth > 0 ? Console.LargestWindowWidth : targetWidth;
+            int maxH = Console.LargestWindowHeight > 0 ? Console.LargestWindowHeight : targetHeight;
+            targetWidth = Math.Min(Math.Max(1, targetWidth), maxW);
+            targetHeight = Math.Min(Math.Max(1, targetHeight), maxH);
+
+            // Ensure buffer is at least as large as the window we want
+            int bufferWidth = Console.BufferWidth;
+            int bufferHeight = Console.BufferHeight;
+            int newBufferWidth = Math.Max(bufferWidth, targetWidth);
+            int newBufferHeight = Math.Max(bufferHeight, targetHeight);
+
+            if (newBufferWidth != bufferWidth || newBufferHeight != bufferHeight)
+            {
+                Console.SetBufferSize(newBufferWidth, newBufferHeight);
+            }
+
+            Console.SetWindowSize(targetWidth, targetHeight);
+            Console.WriteLine($"Console window set to {targetWidth}x{targetHeight}. Buffer: {Console.BufferWidth}x{Console.BufferHeight}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to set console size: {ex.GetType().Name}: {ex.Message}");
+            // continue running even if resizing failed
+        }
+
         Console.CursorVisible = false;
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         Input.StartInputListener();
