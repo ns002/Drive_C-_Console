@@ -13,6 +13,7 @@ public sealed partial class WindowsConsole
      Instead, they store a failure code in a secret CPU register.
      Setting this to true tells the .NET runtime: "If this Windows function fails,
      capture that error code immediately so I can read it later in C# using Marshal.GetLastWin32Error()."
+     !!!Capture the error instantly before anything else overwrites the OS register!!!
     */
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
@@ -72,9 +73,9 @@ public sealed partial class WindowsConsole
 
     public sealed partial class Input
     {
-        [LibraryImport("user32.dll", SetLastError = true)]
-        private static partial short GetAsyncKeyState(int vKey);
-
+        [LibraryImport("user32.dll", SetLastError = true)]  //setLastError is useless here, but i have a feeling you will know when it doesn't work...
+        private static partial short GetAsyncKeyState(int vKey); //why must i give it it's real name :(
+                                                                 // I do not use it as async
         public enum Key : int
         {
             ESCAPE = 0x1B,
@@ -131,7 +132,6 @@ public sealed partial class WindowsConsole
     [System.Diagnostics.Conditional("DEBUG")]
     private static void LogWin32Error(string contextMessage)
     {
-        // Capture the error instantly before anything else overwrites the OS register
         int errorCode = Marshal.GetLastWin32Error();
         string errorMsg = new Win32Exception(errorCode).Message;
 
