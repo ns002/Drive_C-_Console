@@ -1,12 +1,12 @@
 ﻿using Axis = WindowsConsole.Input.Axis;
 public class Player
 {
-    static bool died = false;
-    public static void Kill() => died = true;
+    static bool touchedGrass = false;
+    public static void TouchGrass() => touchedGrass = true;
     public static bool HasDied()
     {
-        if (!died) return false;
-        died = false; return true;
+        if (!touchedGrass) return false;
+        touchedGrass = false; return true;
     }
     public ushort position = Game.windowWidth;  //set to something unrealistic like windowWidth (this will index out of bounds)
     public const ushort maxVelocity = 13;       //higher speeds make the game impossible

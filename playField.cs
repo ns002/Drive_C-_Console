@@ -88,7 +88,10 @@ public class PlayField
                 lines[29][i] = playerChar;
                 if (currentChar == coinChar) ++coinsCollected;
                 else if (currentChar == grassChar) {
-                    Player.Kill(); return;
+                    Player.TouchGrass();
+                    lines[29].Insert(i, COLOR_MAGENTA);
+                    lines[29].Insert(i + COLOR_MAGENTA.Length + 1, COLOR_GREEN); //don't forget the grass doesn't append unecessary color flags
+                    return;
                 }
                 lines[29].Insert(i, COLOR_MAGENTA);
                 ++distanceTravelled;

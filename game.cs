@@ -50,7 +50,7 @@ public sealed class Game
             Console.WriteLine("\nPress escape to quit...");
             if (Player.HasDied()) 
             {
-                Console.WriteLine("You died. Press 'R' to play again.");
+                Console.WriteLine("You touched grass. Press 'R' to play again.");
                 while (WaitingForInput()) Thread.Sleep(1);
                 Run(); //The loop will break whenever the input listener disconnects.
                 return;
