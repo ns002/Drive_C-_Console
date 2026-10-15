@@ -1,4 +1,5 @@
-﻿public class GameState
+﻿#pragma warning disable CA2211  //public non-const variables
+public class GameState
 {
     public GameState()
     {
@@ -7,7 +8,6 @@
     public ulong distance;
     public ulong coins;
 
-    //Do not reset these in the constructor
     volatile public static bool running = false;
 }
 

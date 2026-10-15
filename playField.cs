@@ -14,8 +14,6 @@ public class PlayField
     const char grassChar = '░';
     const char coinChar = '*';
 
-    private static short GetRandomDirection() => (short)Random.Shared.Next(-1, 2); //get's the random direction the road will move to
-
     bool roadSideColorDecider = true;
     private string GetRoadsideColored()
     {
@@ -89,8 +87,8 @@ public class PlayField
                 if (currentChar == coinChar) ++coinsCollected;
                 else if (currentChar == grassChar) {
                     Player.TouchGrass();
-                    lines[29].Insert(i, COLOR_MAGENTA);
-                    lines[29].Insert(i + COLOR_MAGENTA.Length + 1, COLOR_GREEN); //don't forget the grass doesn't append unecessary color flags
+                    lines[29].Insert(i, COLOR_MAGENTA); //i += COLOR_MAGENTA.Length; //if you need to keep looping and do not return
+                    lines[29].Insert(i + COLOR_MAGENTA.Length + 1, COLOR_GREEN); //don't forget that the grass doesn't append unecessary color flags
                     return;
                 }
                 lines[29].Insert(i, COLOR_MAGENTA);
@@ -117,6 +115,7 @@ public class PlayField
             CreateLine(lines[i]);
         }
     }
+    private static short GetRandomDirection() => (short)Random.Shared.Next(-1, 2); //get's the random direction the road will move to
     ulong lineNumber = 0;
     private void CreateLine(StringBuilder lineReference)
     {

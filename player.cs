@@ -1,4 +1,5 @@
-﻿using Axis = WindowsConsole.Input.Axis;
+﻿#pragma warning disable CA2211  //public non-const variables
+using Axis = WindowsConsole.Input.Axis;
 public class Player
 {
     static bool touchedGrass = false;
@@ -13,6 +14,7 @@ public class Player
     public const ushort minVelocity = 4;
     public ushort velocity = minVelocity;
 
+    //You will have to look at WindowsConsole.Input.StartInputListener() for the keys
     volatile public static Axis steerDirection = Axis.Neutral;
     volatile public static Axis speedDirection = Axis.Neutral;
 

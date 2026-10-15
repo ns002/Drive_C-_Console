@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	<AnalysisMode>Minimum</AnalysisMode>
+	<NoWarn>$(NoWarn);CA1050</NoWarn>
   </PropertyGroup>
 
 </Project>
